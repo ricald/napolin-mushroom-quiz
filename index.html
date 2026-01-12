@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>なぽりんのキノコ診断</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&display=swap");
+      body {
+        font-family: "Kiwi+Maru", serif;
+        background-color: #fdf5e6;
+      }
+      .mushroom-float {
+        animation: floating 3s ease-in-out infinite;
+      }
+      @keyframes floating {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      .option-btn:active {
+        transform: scale(0.98);
+      }
+      .napo-character {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #fb923c;
+        margin: 0 auto;
+      }
+      /* アイコンの配置調整：頭の上にちょこんと乗る位置 */
+      .mushroom-overlay {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(
+          15px
+        ); /* 右上に少しずらして頭の上に見えるように調整 */
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div
+      id="game-container"
+      class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border-4 border-orange-200 text-center relative overflow-hidden mb-4"
+    >
+      <!-- Start Screen -->
+      <div id="start-screen">
+        <div class="mb-6 relative inline-block">
+          <img
+            src="https://storage.googleapis.com/production-b8884.appspot.com/user/icon/EK2LzF6sJMhcsVjaFOv2xegv1yZ2/thumbnail.image/jpeg?ts=1762028997086"
+            alt="なぽりん"
+            class="napo-character shadow-lg"
+          />
+          <!-- キノコアイコンを頭の上に配置 -->
+          <div class="mushroom-overlay text-4xl mushroom-float">🍄</div>
+        </div>
+        <h1 class="text-2xl font-bold text-orange-800 mb-4">
+          なぽりんの<br />キノコ診断ゲーム
+        </h1>
+        <p class="text-gray-600 mb-8 leading-relaxed">
+          迷いの森を彷徨ってるのよー！<br />
+          5つの質問に答えて、あなたの「キノコタイプ」をなぽりんがバシッと出しちゃうよー🍄
+        </p>
+        <button
+          onclick="startGame()"
+          class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-10 rounded-full transition-all transform hover:scale-105 shadow-lg"
+        >
+          診断スタートだで！
+        </button>
+      </div>
+
+      <!-- Quiz Screen -->
+      <div id="quiz-screen" class="hidden">
+        <div id="progress-bar" class="w-full bg-gray-100 h-2 rounded-full mb-6">
+          <div
+            id="progress-inner"
+            class="bg-orange-400 h-2 rounded-full transition-all duration-300"
+            style="width: 20%"
+          ></div>
+        </div>
+        <p
+          id="question-count"
+          class="text-xs text-orange-400 font-bold mb-1 text-left uppercase tracking-widest font-sans"
+        >
+          Question 1/5
+        </p>
+        <h2
+          id="question-text"
+          class="text-xl font-bold text-orange-900 mb-6 text-left leading-relaxed min-h-[3.5em]"
+        >
+          質問の内容
+        </h2>
+        <div id="options-container" class="space-y-3">
+          <!-- Buttons injected here -->
+        </div>
+      </div>
+
+      <!-- Result Screen -->
+      <div id="result-screen" class="hidden">
+        <div class="mb-4">
+          <img
+            src="https://storage.googleapis.com/production-b8884.appspot.com/user/icon/EK2LzF6sJMhcsVjaFOv2xegv1yZ2/thumbnail.image/jpeg?ts=1762028997086"
+            alt="なぽりん"
+            class="napo-character w-20 h-20 border-2"
+          />
+        </div>
+        <div id="result-emoji" class="text-6xl mb-2 mushroom-float">🍄</div>
+        <h2 class="text-lg text-gray-500 mb-2 font-medium">
+          診断結果！あなたのタイプは…
+        </h2>
+        <h1
+          id="result-title"
+          class="text-3xl font-bold text-orange-800 mb-4 underline decoration-orange-200 decoration-8 underline-offset-4"
+        >
+          キノコ名
+        </h1>
+        <div
+          class="bg-orange-50 p-6 rounded-2xl mb-8 border-l-4 border-orange-400"
+        >
+          <p
+            id="result-description"
+            class="text-gray-700 leading-relaxed text-sm text-left"
+          ></p>
+        </div>
+        <button
+          onclick="location.reload()"
+          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-full transition-all shadow-md"
+        >
+          もう一度やるのよー！
+        </button>
+      </div>
+    </div>
+
+    <!-- Copyright Footer -->
+    <footer class="text-orange-900/40 text-xs font-sans tracking-wide">
+      &copy; 2026 なぽりんのキノコ診断 All Rights Reserved.
+    </footer>
+
+    <script>
+      const questions = [
+        {
+          q: "好きな季節はどれかねー？",
+          options: [
+            { text: "春（新しい環境にもすぐ馴染めるから）", score: "shimeji" },
+            { text: "夏（とにかく賑やかで元気が出るから）", score: "enoki" },
+            {
+              text: "秋（枯れていく感じがたまらなく好き）",
+              score: "benitengu",
+            },
+            { text: "冬（静かにじっと耐える時間が好き）", score: "shiitake" },
+          ],
+        },
+        {
+          q: "好きな場所はどこかなー？探すといないものよね！",
+          options: [
+            { text: "どこにでもある普通の公園", score: "shimeji" },
+            { text: "「立ち入り禁止」の看板の裏側", score: "benitengu" },
+            { text: "活気あふれるイベント会場", score: "enoki" },
+            { text: "歴史を感じる古い神社やお寺", score: "shiitake" },
+          ],
+        },
+        {
+          q: "何をしている時が一番楽しい？ASMRとかばれちまう？",
+          options: [
+            { text: "飲み会や集まりに紛れている時", score: "shimeji" },
+            { text: "突拍子もないことで人を驚かせた時", score: "benitengu" },
+            { text: "流行りの話題でみんなと盛り上がる時", score: "enoki" },
+            { text: "黙々とルーティン作業をこなす時", score: "shiitake" },
+          ],
+        },
+        {
+          q: "休日は何をするのがいいかねぇ？？",
+          options: [
+            { text: "誘われたらどこへでも行くよー", score: "shimeji" },
+            { text: "予定もないのに住宅展示場へ行く", score: "benitengu" },
+            { text: "流行りのスポットで賑やかに過ごす", score: "enoki" },
+            { text: "家で静かに安定して過ごす", score: "shiitake" },
+          ],
+        },
+        {
+          q: "あなたが一番好きな（必要な）保険は？ドル払い？",
+          options: [
+            { text: "何にでも対応できる個人賠償責任保険", score: "shimeji" },
+            { text: "返戻率にこだわる貯蓄型の学資保険", score: "benitengu" },
+            { text: "特にない、全部解約しただで！", score: "enoki" },
+            { text: "守りを固める掛け捨ての火災保険", score: "shiitake" },
+          ],
+        },
+      ];
+
+      const results = [
+        {
+          id: "shimeji",
+          name: "シメジ",
+          emoji: "🍄",
+          description:
+            "たーしーかーにー！あなたは万能で適応力抜群のシメジタイプだで！どんな環境や人間関係にもスッと馴染める達人なのよー。周囲とのバランスを取るのが非常に上手くて、私にとっても最高の仲間なんだな〜😌",
+        },
+        {
+          id: "benitengu",
+          name: "ベニテングタケ（毒）",
+          emoji: "⚠️",
+          description:
+            "今回の結果はラッキーパンチ過ぎるよ🤣 あなたは超個性的で少し捻くれたベニテングタケタイプ！「立ち入り禁止」の裏側を覗いちゃうような、独自の美学で私と一緒に迷いの森を彷徨ってるのよー。人と同じ道を歩まない、こだわり派なんだで！",
+        },
+        {
+          id: "enoki",
+          name: "エノキタケ",
+          emoji: "☀️",
+          description:
+            "バッチシだと思うよ👍 あなたは太陽のように明るいエノキタイプ！賑やかな場所が大好きで、固定費もバッサリ切っちゃう勢いがあるのよー。私と一緒にワイワイやるのが最高なんだな〜😌",
+        },
+        {
+          id: "shiitake",
+          name: "シイタケ",
+          emoji: "🪵",
+          description:
+            "細かいところまで気遣ってくれてありがとう🙏 あなたは安定感と重厚感のあるシイタケタイプだで！掛け捨て保険で堅実に守りを固めるような、思慮深い人なのよー。私も信頼してるし、これからもよろしくね😉",
+        },
+      ];
+
+      let currentQuestion = 0;
+      let selectedScores = [];
+
+      function startGame() {
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("quiz-screen").classList.remove("hidden");
+        showQuestion();
+      }
+
+      function showQuestion() {
+        const q = questions[currentQuestion];
+        document.getElementById("question-text").innerText = q.q;
+        document.getElementById("question-count").innerText = `Question ${
+          currentQuestion + 1
+        }/${questions.length}`;
+        document.getElementById("progress-inner").style.width =
+          ((currentQuestion + 1) / questions.length) * 100 + "%";
+
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+
+        q.options.forEach((option) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "option-btn w-full bg-white border-2 border-orange-100 hover:border-orange-400 hover:bg-orange-50 p-4 rounded-2xl text-left transition-all text-gray-700 font-medium shadow-sm";
+          btn.innerText = option.text;
+          btn.onclick = () => nextQuestion(option.score);
+          container.appendChild(btn);
+        });
+      }
+
+      function nextQuestion(score) {
+        selectedScores.push(score);
+        currentQuestion++;
+
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          showResult();
+        }
+      }
+
+      function showResult() {
+        document.getElementById("quiz-screen").classList.add("hidden");
+        document.getElementById("result-screen").classList.remove("hidden");
+
+        const counts = {};
+        selectedScores.forEach((s) => (counts[s] = (counts[s] || 0) + 1));
+
+        const winner = Object.keys(counts).reduce((a, b) =>
+          counts[a] > counts[b] ? a : b
+        );
+
+        const bestMatch = results.find((r) => r.id === winner);
+
+        document.getElementById("result-title").innerText = bestMatch.name;
+        document.getElementById("result-emoji").innerText = bestMatch.emoji;
+        document.getElementById("result-description").innerText =
+          bestMatch.description;
+      }
+    </script>
+  </body>
+</html>
